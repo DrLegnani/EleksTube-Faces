@@ -2,6 +2,7 @@
 #include "StarWarsHud.h"
 #include "IPSClock.h"
 #include "GhostbustersLogo.h"
+#include "SlimerLogo.h"
 #include <math.h>
 
 // Shared with Backlights: 0 = Normal Ecto patrol, 1 = PKE Class 5 Alert (56-59s), 2 = Cross Streams & Trap (00-02s)
@@ -12,24 +13,25 @@ namespace {
 enum GhostPal {
     P_WHITE = 0,
     P_BLACK,
-    P_SKY_TOP,      // Deep midnight navy
-    P_SKY_BOT,      // Eerie supernatural violet
-    P_BUILDING,     // Manhattan skyline dark skyscraper silhouette
-    P_BUILDING_EDGE,// Architectural bevel/roofline highlight
-    P_WINDOW_LIT,   // Warm skyscraper office windows
-    P_HAZARD_YEL,   // Trap yellow hazard chevron
-    P_HAZARD_BLK,   // Trap black chevron
-    P_LOGO_RED,     // No-Ghost prohibition red circle & slash
-    P_SLIMER_GRN,   // Fluorescent ectoplasm green
-    P_SLIMER_AURA,  // Translucent green halo
-    P_SLIMER_LIP,   // Slimer mouth / tongue pink
-    P_STREAM_RED,   // Proton stream outer red
-    P_STREAM_ORG,   // Proton stream orange flame
-    P_STREAM_YEL,   // Proton stream intense yellow
-    P_STREAM_CYAN,  // Proton electric lightning cyan
-    P_TRAP_CONE,    // Ghost trap capture light beam
-    P_PKE_AMBER,    // PKE meter LED amber
-    P_PANEL_BG,     // Deep beveled HUD backdrop
+    P_SKY_TOP,          // Deep midnight navy
+    P_SKY_BOT,          // Eerie supernatural violet
+    P_BUILDING,         // Art Deco concrete grey (visibly grey, not black!)
+    P_BUILDING_SHADOW,  // Darker grey for 3D pillar recesses
+    P_BUILDING_EDGE,    // Crisp light grey architectural cornices & spires
+    P_WINDOW_LIT,       // Warm skyscraper office windows
+    P_HAZARD_YEL,       // Trap yellow hazard chevron
+    P_HAZARD_BLK,       // Trap black chevron
+    P_LOGO_RED,         // No-Ghost prohibition red circle & slash
+    P_SLIMER_GRN,       // Fluorescent ectoplasm green
+    P_SLIMER_AURA,      // Translucent green halo
+    P_SLIMER_LIP,       // Slimer mouth / tongue pink
+    P_STREAM_RED,       // Proton stream outer red
+    P_STREAM_ORG,       // Proton stream orange flame
+    P_STREAM_YEL,       // Proton stream intense yellow
+    P_STREAM_CYAN,      // Proton electric lightning cyan
+    P_TRAP_CONE,        // Ghost trap capture light beam
+    P_PKE_AMBER,        // PKE meter LED amber
+    P_PANEL_BG,         // Deep beveled HUD backdrop
     P_COUNT
 };
 
@@ -38,9 +40,10 @@ const uint16_t GHOST_RAW[P_COUNT] = {
     0x0000,                 // P_BLACK
     swC565(6, 8, 24),       // P_SKY_TOP
     swC565(32, 14, 52),     // P_SKY_BOT
-    swC565(18, 16, 26),     // P_BUILDING
-    swC565(48, 42, 64),     // P_BUILDING_EDGE
-    swC565(255, 225, 120),  // P_WINDOW_LIT
+    swC565(85, 90, 105),    // P_BUILDING (Clean concrete grey)
+    swC565(55, 60, 72),     // P_BUILDING_SHADOW (Recessed columns)
+    swC565(155, 160, 180),  // P_BUILDING_EDGE (Light architectural trim)
+    swC565(255, 230, 130),  // P_WINDOW_LIT
     swC565(250, 205, 15),   // P_HAZARD_YEL
     swC565(20, 20, 20),     // P_HAZARD_BLK
     swC565(225, 20, 24),    // P_LOGO_RED
@@ -53,19 +56,18 @@ const uint16_t GHOST_RAW[P_COUNT] = {
     swC565(60, 230, 255),   // P_STREAM_CYAN
     swC565(140, 240, 255),  // P_TRAP_CONE
     swC565(255, 160, 20),   // P_PKE_AMBER
-    swC565(14, 12, 22)      // P_PANEL_BG
+    swC565(16, 18, 26)      // P_PANEL_BG
 };
 
-// Manhattan skyline at night (solid buildings spanning full width, sky strictly above, zero ghosting)
+// Manhattan skyline at night (visible GREY concrete buildings spanning full width, sky strictly above, zero ghosting)
 __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int screen, unsigned long nowMs,
                                                         uint8_t state, uint16_t stateMs, const uint16_t *pal) {
     // 0. ALWAYS clear full sprite to prevent ANY persistence between screens
     s.fillSprite(pal[P_BLACK]);
 
     // Building roofline heights per screen (0 = HoursTens, 1 = HoursOnes, 2 = Center Logo, 3 = MinTens, 4 = MinOnes, 5 = HUD)
-    // Roofline y is where the sky ends and the solid building begins:
-    // Screen 2 has lower buildings (roof at y=168) so the No-Ghost logo has clean starry sky behind it!
-    int roofY[6] = {125, 110, 165, 118, 130, 105};
+    // Screen 2 roof is at y=165 so the No-Ghost logo floats in the starry sky
+    int roofY[6] = {122, 112, 165, 118, 128, 104};
     int rY = roofY[screen];
 
     // 1. Midnight Sky Gradient (strictly from y = 0 down to rY)
@@ -75,7 +77,7 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
         s.drawFastHLine(0, y, TFT_WIDTH, sky);
     }
 
-    // 2. Twinkling stars in the upper sky
+    // 2. Twinkling stars in the sky
     uint16_t seed = (uint16_t)(screen * 71 + 33);
     for (int star = 0; star < 12; ++star) {
         seed = seed * 109 + 89;
@@ -87,26 +89,46 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
         }
     }
 
-    // 3. Solid Manhattan Buildings (strictly from rY down to y = 222, spanning FULL width 0..TFT_WIDTH)
+    // 3. Solid Manhattan Buildings in VISIBLE CONCRETE GREY (spanning FULL width 0..TFT_WIDTH)
     s.fillRect(0, rY, TFT_WIDTH, 222 - rY, pal[P_BUILDING]);
     s.drawFastHLine(0, rY, TFT_WIDTH, pal[P_BUILDING_EDGE]);
+    s.drawFastHLine(0, rY + 1, TFT_WIDTH, pal[P_BUILDING_EDGE]);
 
-    // Architectural crowns / spires
-    if (screen == 0 || screen == 4) {
-        s.fillRect(20, rY - 14, 30, 14, pal[P_BUILDING]);
-        s.drawFastHLine(20, rY - 14, 30, pal[P_BUILDING_EDGE]);
-        s.drawFastVLine(35, rY - 26, 12, pal[P_BUILDING_EDGE]); // Antenna spire
-    } else if (screen == 1 || screen == 3) {
-        s.fillRect(70, rY - 18, 40, 18, pal[P_BUILDING]);
-        s.drawFastHLine(70, rY - 18, 40, pal[P_BUILDING_EDGE]);
-        s.drawFastVLine(90, rY - 30, 12, pal[P_BUILDING_EDGE]); // Antenna spire
+    // Architectural depth: recessed vertical columns (3D pillar shadows)
+    for (int colX = 14; colX < TFT_WIDTH; colX += 28) {
+        s.fillRect(colX, rY + 4, 8, 218 - rY, pal[P_BUILDING_SHADOW]);
     }
 
-    // Lit windows in buildings
-    for (int wy = rY + 8; wy < 216; wy += 14) {
-        for (int wx = 12; wx < TFT_WIDTH - 16; wx += 16) {
+    // Decorative mid-building cornices
+    if (222 - rY > 40) {
+        s.drawFastHLine(0, rY + 36, TFT_WIDTH, pal[P_BUILDING_EDGE]);
+    }
+
+    // Architectural crowns / antennas / water towers on rooftops
+    if (screen == 0 || screen == 4) {
+        // Stepped Art Deco crown
+        s.fillRect(24, rY - 16, 32, 16, pal[P_BUILDING]);
+        s.drawFastHLine(24, rY - 16, 32, pal[P_BUILDING_EDGE]);
+        s.fillRect(32, rY - 26, 16, 10, pal[P_BUILDING]);
+        s.drawFastHLine(32, rY - 26, 16, pal[P_BUILDING_EDGE]);
+        s.drawFastVLine(40, rY - 38, 12, pal[P_BUILDING_EDGE]); // Antenna spire
+        s.fillCircle(40, rY - 38, 2, pal[P_LOGO_RED]);          // Blinking aircraft beacon
+    } else if (screen == 1 || screen == 3) {
+        // Classic NYC wooden water tower on roof
+        s.fillRect(72, rY - 18, 22, 18, pal[P_BUILDING_SHADOW]);
+        s.drawFastHLine(70, rY - 18, 26, pal[P_BUILDING_EDGE]);
+        s.drawFastVLine(74, rY, 4, pal[P_BUILDING_EDGE]); // Stilt 1
+        s.drawFastVLine(90, rY, 4, pal[P_BUILDING_EDGE]); // Stilt 2
+        // Antenna
+        s.drawFastVLine(25, rY - 24, 24, pal[P_BUILDING_EDGE]);
+        s.fillCircle(25, rY - 24, 2, pal[P_LOGO_RED]);
+    }
+
+    // Lit windows in buildings (bright warm amber squares)
+    for (int wy = rY + 10; wy < 214; wy += 14) {
+        for (int wx = 8; wx < TFT_WIDTH - 14; wx += 14) {
             uint16_t wseed = (uint16_t)(wx * 37 + wy * 19 + screen * 43);
-            if ((wseed % 3) == 0) {
+            if ((wseed % 3) != 0) { // 66% of windows lit
                 s.fillRect(wx, wy, 6, 8, pal[P_WINDOW_LIT]);
             }
         }
@@ -185,101 +207,68 @@ __attribute__((noinline)) void drawNoGhostLogoCenter(TFT_eSprite &s, const struc
     swDrawTxt(s, dateBuf, cx, 196, 4, 1, MC_DATUM, pal[P_STREAM_CYAN]);
 }
 
-// Draw PKE Meter + Slimer + Weather readout on Screen 5 (ONLY ON JANELA 6)
+// Draw REAL Slimer (Geleia) + Clean Dynamic Weather on Screen 5 (ONLY ON JANELA 6)
 __attribute__((noinline)) void drawGhostbustersHudScreen(TFT_eSprite &s, WeatherService &weather,
                                                          const struct tm &now, unsigned long nowMs,
                                                          uint8_t state, const uint16_t *pal) {
     int cx = TFT_WIDTH / 2; // 67
 
-    // 1. Top P.K.E. Detection Header
-    swFillChamfer(s, 10, 8, 115, 32, 4, pal[P_STREAM_CYAN]);
-    s.fillRect(12, 10, 111, 28, pal[P_PANEL_BG]);
-    swDrawTxt(s, "P.K.E. DETECTOR", cx, 12, 1, 1, TC_DATUM, pal[P_STREAM_CYAN]);
-    swDrawTxt(s, "FIREHOUSE HQ", cx, 23, 1, 1, TC_DATUM, pal[P_WHITE]);
+    // 1. Top Mini-Badge: ECTO RADAR
+    swFillChamfer(s, 16, 6, 103, 18, 3, pal[P_SLIMER_GRN]);
+    s.fillRect(18, 8, 99, 14, pal[P_PANEL_BG]);
+    swDrawTxt(s, "ECTO-1 RADAR", cx, 9, 1, 1, TC_DATUM, pal[P_SLIMER_GRN]);
 
-    // 2. Animated PKE Meter Sensor Wings & Bar Graph
-    int pkeY = 54;
-    int elevation = (state == 1) ? 22 : (int)(fabsf(sinf(nowMs * 0.003f)) * 14.0f);
+    // 2. REAL SLIMER (GELEIA) BITMAP (80x80) with floating bobbing wave
+    int slimerBob = (int)(sinf(nowMs * 0.005f) * 5.0f);
+    int slimerX = (TFT_WIDTH - SLIMER_LOGO_W) / 2; // (135 - 80) / 2 = 27
+    int slimerY = 26 + slimerBob;
 
-    // Central PKE handle
-    s.fillRect(cx - 10, pkeY, 20, 24, pal[P_BUILDING]);
-    s.drawRect(cx - 10, pkeY, 20, 24, pal[P_STREAM_CYAN]);
+    // Glowing ectoplasm aura behind Slimer
+    s.fillCircle(cx, slimerY + SLIMER_LOGO_H / 2, 38, pal[P_SLIMER_AURA]);
 
-    // Center PKE screen bar graph
-    uint8_t bars = (state == 1) ? 5 : ((nowMs / 180) % 6);
-    for (int b = 0; b < 5; ++b) {
-        uint16_t bcol = (b < bars) ? (b > 3 ? pal[P_LOGO_RED] : pal[P_PKE_AMBER]) : pal[P_BLACK];
-        s.fillRect(cx - 7 + b * 3, pkeY + 7, 2, 10, bcol);
+    for (int y = 0; y < SLIMER_LOGO_H; ++y) {
+        for (int x = 0; x < SLIMER_LOGO_W; ++x) {
+            uint16_t rawColor = pgm_read_word(&SLIMER_LOGO_DATA[y * SLIMER_LOGO_W + x]);
+            if (rawColor != 0x0000) {
+                s.drawPixel(slimerX + x, slimerY + y, tfts->dimColor(rawColor));
+            }
+        }
     }
 
-    // Left Wing
-    s.drawLine(cx - 10, pkeY + 6, cx - 35, pkeY + 6 - elevation, pal[P_WHITE]);
-    s.drawLine(cx - 10, pkeY + 8, cx - 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
-    for (int wled = 0; wled < 3; ++wled) {
-        int lx = cx - 18 - wled * 7;
-        int ly = pkeY + 7 - (elevation * (wled + 1)) / 3;
-        bool lit = (state == 1) ? (((nowMs / 70 + wled) % 2) == 0) : (((nowMs / 180 + wled) % 3) == 0);
-        s.fillCircle(lx, ly, 2, lit ? pal[P_PKE_AMBER] : pal[P_LOGO_RED]);
-    }
+    // 3. Clean, Dynamic Weather & Forecast Panel (y = 112..218)
+    swFillChamfer(s, 10, 112, 115, 104, 4, pal[P_SLIMER_GRN]);
+    s.fillRect(12, 114, 111, 100, pal[P_PANEL_BG]);
 
-    // Right Wing
-    s.drawLine(cx + 10, pkeY + 6, cx + 35, pkeY + 6 - elevation, pal[P_WHITE]);
-    s.drawLine(cx + 10, pkeY + 8, cx + 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
-    for (int wled = 0; wled < 3; ++wled) {
-        int rx = cx + 18 + wled * 7;
-        int ry = pkeY + 7 - (elevation * (wled + 1)) / 3;
-        bool lit = (state == 1) ? (((nowMs / 70 + wled) % 2) == 0) : (((nowMs / 180 + wled) % 3) == 0);
-        s.fillCircle(rx, ry, 2, lit ? pal[P_PKE_AMBER] : pal[P_LOGO_RED]);
-    }
+    // Panel Header
+    swDrawTxt(s, "PREVISAO DO TEMPO", cx, 118, 1, 1, TC_DATUM, pal[P_STREAM_CYAN]);
 
-    // 3. Floating Animated SLIMER (Geleia)
-    int slimerY = 112 + (int)(sinf(nowMs * 0.004f) * 6.0f);
-    int slimerX = cx;
-
-    s.fillCircle(slimerX, slimerY, 20, pal[P_SLIMER_AURA]);
-    s.fillRoundRect(slimerX - 15, slimerY - 13, 30, 26, 10, pal[P_SLIMER_GRN]);
-    s.fillCircle(slimerX, slimerY - 9, 13, pal[P_SLIMER_GRN]);
-    s.fillCircle(slimerX - 5, slimerY + 11, 7, pal[P_SLIMER_GRN]);
-    s.fillCircle(slimerX + 6, slimerY + 10, 6, pal[P_SLIMER_GRN]);
-
-    s.fillCircle(slimerX - 5, slimerY - 11, 3, pal[P_WHITE]);
-    s.fillCircle(slimerX + 5, slimerY - 11, 3, pal[P_WHITE]);
-    s.fillCircle(slimerX - 4, slimerY - 11, 1, pal[P_BLACK]);
-    s.fillCircle(slimerX + 4, slimerY - 11, 1, pal[P_BLACK]);
-
-    s.fillRoundRect(slimerX - 9, slimerY - 3, 18, 10, 4, pal[P_BLACK]);
-    s.fillCircle(slimerX, slimerY + 2, 3, pal[P_SLIMER_LIP]);
-    s.drawPixel(slimerX - 5, slimerY - 2, pal[P_WHITE]);
-    s.drawPixel(slimerX + 5, slimerY - 2, pal[P_WHITE]);
-
-    s.fillRoundRect(slimerX - 20, slimerY - 5, 7, 5, 2, pal[P_SLIMER_GRN]);
-    s.fillRoundRect(slimerX + 13, slimerY - 7, 7, 5, 2, pal[P_SLIMER_GRN]);
-
-    // 4. Weather & Entity Status Box (Clean chamfer panel, ONLY ON SCREEN 5)
-    swFillChamfer(s, 10, 162, 115, 54, 4, pal[P_SLIMER_GRN]);
-    s.fillRect(12, 164, 111, 50, pal[P_PANEL_BG]);
-
-    swDrawTxt(s, "PARANORMAL SCAN", cx, 167, 1, 1, TC_DATUM, pal[P_SLIMER_GRN]);
-
-    if (state == 1 || state == 2) {
-        swDrawTxt(s, "CLASS 5 VAPOR!", cx, 178, 1, 1, TC_DATUM, pal[P_LOGO_RED]);
-    } else {
-        swDrawTxt(s, "SLIMER SPOTTED", cx, 178, 1, 1, TC_DATUM, pal[P_STREAM_YEL]);
-    }
-
-    // Weather readout (ONLY ON SCREEN 5)
+    // Current Temperature in BIG Font 4
     char unit = (WeatherService::getUnits().value == "imperial") ? 'F' : 'C';
     float curTemp = weather.getNowTemp();
     int temp = (int)(curTemp + (curTemp >= 0.0f ? 0.5f : -0.5f));
-    char wBuf[16];
-    snprintf(wBuf, sizeof(wBuf), "NYC %d%c", temp, unit);
-    swDrawTxt(s, wBuf, 38, 198, 2, 1, MC_DATUM, pal[P_WHITE]);
+    char tempBuf[16];
+    snprintf(tempBuf, sizeof(tempBuf), "%d*%c", temp, unit);
+    swDrawTxt(s, tempBuf, cx, 146, 4, 1, MC_DATUM, pal[P_WHITE]);
 
+    // High & Low Temperatures (Clean Max / Min line)
     float highT = weather.getHigh(5);
+    float lowT = weather.getLow(5);
     int hi = (int)(highT + (highT >= 0.0f ? 0.5f : -0.5f));
-    char hiBuf[12];
-    snprintf(hiBuf, sizeof(hiBuf), "HI:%d", hi);
-    swDrawTxt(s, hiBuf, 94, 198, 1, 1, MC_DATUM, pal[P_STREAM_ORG]);
+    int lo = (int)(lowT + (lowT >= 0.0f ? 0.5f : -0.5f));
+    char hiLoBuf[24];
+    snprintf(hiLoBuf, sizeof(hiLoBuf), "MAX %d*  MIN %d*", hi, lo);
+    swDrawTxt(s, hiLoBuf, cx, 174, 2, 1, MC_DATUM, pal[P_STREAM_ORG]);
+
+    // Dynamic Ghostbusters Paranormal Activity Status
+    if (state == 2) {
+        swDrawTxt(s, "CAPTURA ATIVA!", cx, 196, 1, 1, TC_DATUM, pal[P_STREAM_CYAN]);
+    } else if (state == 1) {
+        // Blinking Class 5 alert
+        bool flash = ((nowMs / 100) & 1) != 0;
+        swDrawTxt(s, "ALERTA: CLASSE 5!", cx, 196, 1, 1, TC_DATUM, flash ? pal[P_LOGO_RED] : pal[P_WHITE]);
+    } else {
+        swDrawTxt(s, "ECTO: NORMAL", cx, 196, 1, 1, TC_DATUM, pal[P_SLIMER_GRN]);
+    }
 }
 
 // Draw stylized high-energy Proton Wand Stream Digits
