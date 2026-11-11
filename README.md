@@ -2,7 +2,7 @@
 
 A feature-packed custom firmware for **EleksTube IPS** 6-tube pseudo-Nixie clocks (ESP32 + 6x ST7789 IPS displays).
 
-This project enhances the firmware with **13 custom, high-detail vector-rendered clock faces** inspired by iconic movies, gaming, and retro technology, complete with ambient RGB backlight sync, dynamic live weather HUD, and minute-turn animations.
+This project enhances the firmware with **14 custom, high-detail vector-rendered clock faces** inspired by iconic movies, gaming, and retro technology, complete with ambient RGB backlight sync, dynamic live weather HUD, and minute-turn animations.
 
 ---
 
@@ -63,6 +63,13 @@ This project enhances the firmware with **13 custom, high-detail vector-rendered
     - Animated **Ministry of Silly Walks** (John Cleese) in bowler hat, black coat, and briefcase, performing acrobatic leg kicks across the bottom of the screens.
     - Screen 5 features the **Killer Rabbit of Caerbannog** with sharp fangs and glowing red eyes, guarded by the **Holy Hand Grenade of Antioch** (*"1.. 2.. 5! THREE, SIR!"*).
     - Terry Gilliam's legendary **Giant Cupid Foot** slams down with an enormous comic *"SPLAT!"* squash-and-stretch animation at `:00–:02` accompanied by royal fanfare backlights.
+
+14. **Ghostbusters (Caça-Fantasmas) / Ecto-1 & Proton Pack**
+    - Manhattan midnight skyline with 55 Central Park West ("Spook Central" temple roof), glowing skyscraper windows, and green ectoplasmic slime dripping from the top bezels.
+    - Centered **"No-Ghost" Logo (Mooglie the Ghost)** on screen 2: cheerful white ghost waving within the iconic red prohibition circle (`🚫`), *"WHO YA GONNA CALL?"* marquee, and date display.
+    - Screen 5 features Dr. Egon Spengler's **P.K.E. Meter** with raising animated sensor wings and blinking amber/red LED arrays, plus an animated floating **Slimer (Geleia)** with glowing green aura, open eating mouth, and live weather readout.
+    - High-energy **Proton Wand Stream Digits** with fiery outer halos, intense yellow plasma, and electric cyan/white lightning cores.
+    - Minute-turn animation at `:56–:02`: Class 5 Vapor emergency alarm with alternating red/blue Ecto-1 siren backlights at `:56–:59`, followed by **"DON'T CROSS THE STREAMS!"** at `:00–:02` where chaotic dual proton streams tear across all screens and the **Ghost Trap** opens with a brilliant cyan containment light beam!
 
 ---
 

@@ -77,10 +77,11 @@ void Backlights::loop() {
            IPSClock::getTimeOrDate().value == IPSClock::CYBERPUNK ||
            IPSClock::getTimeOrDate().value == IPSClock::DOOM ||
            IPSClock::getTimeOrDate().value == IPSClock::PORTAL ||
-           IPSClock::getTimeOrDate().value == IPSClock::MONTY_PYTHON) {
+           IPSClock::getTimeOrDate().value == IPSClock::MONTY_PYTHON ||
+           IPSClock::getTimeOrDate().value == IPSClock::GHOSTBUSTERS) {
     extern uint8_t vaderSaberState, deathStarState, hyperspaceJumpState, viceCityState;
     extern uint8_t deloreanState, nixieStrangerState, cyberpunkState;
-    extern uint8_t doomState, portalState, montyPythonState;
+    extern uint8_t doomState, portalState, montyPythonState, ghostbustersState;
     int mode = IPSClock::getTimeOrDate().value;
     uint8_t val = (uint32_t)getLEDValue().value * brightness * 95 / (255 * 100);
     unsigned long nowMs = millis();
@@ -152,6 +153,50 @@ void Backlights::loop() {
           uint8_t colorIdx = (tube + step) % 3;
           uint8_t hue = (colorIdx == 0) ? 0 : ((colorIdx == 1) ? 35 : 160);
           setPixelColor(d, hue, 235, (val * 3) >> 2);
+        }
+      }
+    } else if (mode == IPSClock::GHOSTBUSTERS) {
+      if (ghostbustersState == 2) {
+        // Don't cross the streams! Chaotic proton wand plasma (Orange/Yellow/White) + Trap Cyan cone
+        bool flash = ((nowMs / 50) & 1) != 0;
+        uint8_t sparkTube = (nowMs / 80) % 6;
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          if (tube == 2 || tube == 3) {
+            // Trap center: bright electric cyan/white
+            setPixelColor(d, 135, flash ? 40 : 255, val);
+          } else if (tube == sparkTube) {
+            // Proton wand arc spark
+            setPixelColor(d, 28, 255, val);
+          } else {
+            // Hot plasma stream (Red/Orange)
+            setPixelColor(d, 8, 240, (val * 2) / 3);
+          }
+        }
+      } else if (ghostbustersState == 1) {
+        // PKE Meter Critical & Ecto-1 siren strobe (Alternating Red & Blue)
+        bool sirenPhase = ((nowMs / 120) & 1) != 0;
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          bool isLeft = (tube < 3);
+          bool active = (isLeft == sirenPhase);
+          uint8_t hue = isLeft ? 0 : 160; // Red vs Blue
+          setPixelColor(d, hue, 255, active ? val : (val >> 3));
+        }
+      } else {
+        // Normal: Ecto-1 emergency pulse (Red ends, Proton Orange, Ecto-Slime Green center)
+        uint8_t pulse = triWave(16, 90, 160);
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          if (tube == 0) {
+            setPixelColor(d, 0, 240, (val * pulse) >> 8); // Red Ecto siren
+          } else if (tube == 5) {
+            setPixelColor(d, 160, 240, (val * (255 - pulse)) >> 8); // Blue Ecto siren
+          } else if (tube == 2 || tube == 3) {
+            setPixelColor(d, 90, 255, (val * 3) >> 2); // Ectoplasm Slimer green
+          } else {
+            setPixelColor(d, 22, 230, (val * 2) / 3); // Proton pack orange
+          }
         }
       }
     } else if (mode == IPSClock::DELOREAN) {

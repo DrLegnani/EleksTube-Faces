@@ -360,7 +360,8 @@ static int nextDisplayMode(int current) {
 		IPSClock::NIXIE_STRANGER,
 		IPSClock::DOOM,
 		IPSClock::PORTAL,
-		IPSClock::MONTY_PYTHON
+		IPSClock::MONTY_PYTHON,
+		IPSClock::GHOSTBUSTERS
 	};
 	constexpr size_t n = sizeof(cycle) / sizeof(cycle[0]);
 	for (size_t i = 0; i < n; ++i) {
@@ -626,6 +627,8 @@ void clockTaskFn(void *pArg) {
 				matrixClock.renderPortal(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::MONTY_PYTHON) {
 				matrixClock.renderMontyPython(*ipsClock, *timeSync, *weatherService);
+			} else if (animReady && dispMode == IPSClock::GHOSTBUSTERS) {
+				matrixClock.renderGhostbusters(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::MARIO) {
 				matrixClock.renderMario(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::TIME &&
@@ -644,6 +647,7 @@ void clockTaskFn(void *pArg) {
 				case IPSClock::DOOM:
 				case IPSClock::PORTAL:
 				case IPSClock::MONTY_PYTHON:
+				case IPSClock::GHOSTBUSTERS:
 					if (IPSClock::messageActive()) ipsClock->loop();
 					else if (!ipsClock->clockOn() && IPSClock::getDimming() != IPSClock::DIM) tfts->disableAllDisplays();
 					break;

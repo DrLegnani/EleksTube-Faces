@@ -27,7 +27,8 @@ public:
         CYBERPUNK,
         DOOM,
         PORTAL,
-        MONTY_PYTHON
+        MONTY_PYTHON,
+        GHOSTBUSTERS
     };
 
     enum Dimming {
