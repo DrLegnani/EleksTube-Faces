@@ -351,13 +351,13 @@ bool menuDrawn = false;
 static int nextDisplayMode(int current) {
 	static const int cycle[] = {
 		IPSClock::TIME,
-		IPSClock::MARIO,
 		IPSClock::TATOOINE,
 		IPSClock::HYPERSPACE,
 		IPSClock::VADER,
 		IPSClock::DEATH_STAR,
 		IPSClock::VICE_CITY,
 		IPSClock::DELOREAN,
+		IPSClock::NIXIE_STRANGER,
 		IPSClock::DOOM,
 		IPSClock::PORTAL,
 		IPSClock::MONTY_PYTHON
