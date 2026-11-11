@@ -24,7 +24,10 @@ public:
         VICE_CITY,
         DELOREAN,
         NIXIE_STRANGER,
-        CYBERPUNK
+        CYBERPUNK,
+        DOOM,
+        PORTAL,
+        MONTY_PYTHON
     };
 
     enum Dimming {

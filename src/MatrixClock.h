@@ -15,6 +15,9 @@ public:
     void renderDelorean(IPSClock &clock, TimeSync &time, WeatherService &weather);
     void renderNixieStranger(IPSClock &clock, TimeSync &time, WeatherService &weather);
     void renderCyberpunk(IPSClock &clock, TimeSync &time, WeatherService &weather);
+    void renderDoom(IPSClock &clock, TimeSync &time, WeatherService &weather);
+    void renderPortal(IPSClock &clock, TimeSync &time, WeatherService &weather);
+    void renderMontyPython(IPSClock &clock, TimeSync &time, WeatherService &weather);
     void renderTron(IPSClock &clock, TimeSync &time, WeatherService &weather);
     void renderMario(IPSClock &clock, TimeSync &time, WeatherService &weather);
     void renderTatooine(IPSClock &clock, TimeSync &time, WeatherService &weather);

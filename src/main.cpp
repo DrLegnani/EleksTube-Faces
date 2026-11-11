@@ -358,8 +358,9 @@ static int nextDisplayMode(int current) {
 		IPSClock::DEATH_STAR,
 		IPSClock::VICE_CITY,
 		IPSClock::DELOREAN,
-		IPSClock::NIXIE_STRANGER,
-		IPSClock::CYBERPUNK
+		IPSClock::DOOM,
+		IPSClock::PORTAL,
+		IPSClock::MONTY_PYTHON
 	};
 	constexpr size_t n = sizeof(cycle) / sizeof(cycle[0]);
 	for (size_t i = 0; i < n; ++i) {
@@ -619,6 +620,12 @@ void clockTaskFn(void *pArg) {
 				matrixClock.renderNixieStranger(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::CYBERPUNK) {
 				matrixClock.renderCyberpunk(*ipsClock, *timeSync, *weatherService);
+			} else if (animReady && dispMode == IPSClock::DOOM) {
+				matrixClock.renderDoom(*ipsClock, *timeSync, *weatherService);
+			} else if (animReady && dispMode == IPSClock::PORTAL) {
+				matrixClock.renderPortal(*ipsClock, *timeSync, *weatherService);
+			} else if (animReady && dispMode == IPSClock::MONTY_PYTHON) {
+				matrixClock.renderMontyPython(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::MARIO) {
 				matrixClock.renderMario(*ipsClock, *timeSync, *weatherService);
 			} else if (animReady && dispMode == IPSClock::TIME &&
@@ -634,6 +641,9 @@ void clockTaskFn(void *pArg) {
 				case IPSClock::DELOREAN:
 				case IPSClock::NIXIE_STRANGER:
 				case IPSClock::CYBERPUNK:
+				case IPSClock::DOOM:
+				case IPSClock::PORTAL:
+				case IPSClock::MONTY_PYTHON:
 					if (IPSClock::messageActive()) ipsClock->loop();
 					else if (!ipsClock->clockOn() && IPSClock::getDimming() != IPSClock::DIM) tfts->disableAllDisplays();
 					break;

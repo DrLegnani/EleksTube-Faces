@@ -2,7 +2,7 @@
 
 A feature-packed custom firmware for **EleksTube IPS** 6-tube pseudo-Nixie clocks (ESP32 + 6x ST7789 IPS displays).
 
-This project enhances the firmware with **10 custom, high-detail vector-rendered clock faces** inspired by iconic movies, gaming, and retro technology, complete with ambient RGB backlight sync, dynamic live weather HUD, and minute-turn animations.
+This project enhances the firmware with **13 custom, high-detail vector-rendered clock faces** inspired by iconic movies, gaming, and retro technology, complete with ambient RGB backlight sync, dynamic live weather HUD, and minute-turn animations.
 
 ---
 
@@ -42,6 +42,27 @@ This project enhances the firmware with **10 custom, high-detail vector-rendered
 10. **Cyberpunk 2077 / Night City**
     - Kiroshi Optics HUD layout in signature Cyberpunk Yellow (`#FCEE09`) and Electric Cyan (`#00F0FF`).
     - Real-time RGB chromatic aberration glitch on the digits, SAMURAI Cyber-Oni mask, Sandevistan emerald trails, and Relic malfunction glitch tears at the turn of every minute.
+
+11. **DOOM (1994) / UAC Mars Base**
+    - Toxic green nuclear slime pools with animated bubbling acid drops and rusty corrugated industrial steel bulkheads.
+    - Centered **Doomguy Status Face** (screen 2) with animated darting eyes, tooth-grit grin, bloody bruising, and evil grin during Berserk mode.
+    - Classic DOOM red/orange/yellow chisel HUD typography with heavy drop shadows.
+    - Authentic DOOM status bar on screen 5: `HEALTH 100%`, `ARMOR 100%`, and `AMMO 200` shell counter.
+    - Berserk Pack flashing red siren alarm at seconds `56–59`, followed by a massive **BFG 9000** green plasma shockwave tearing across all 6 screens at `:00–:02` with ambient green tube backlights.
+
+12. **Portal 2 / Aperture Science**
+    - Sterile white Aperture laboratory modular wall tiles with dark seams and warning stripes.
+    - Gigantic swirling oval portals: glowing **Blue Portal** (screens 0–1) and **Orange Portal** (screens 3–4) with vortex particle accretion disks.
+    - Centered **Aperture Sentry Turret** (screen 2) with slender white tripod legs, dual machine gun pods, and a sweeping red tracking laser sight.
+    - Chamber Indicator Sign 04 on screen 5 featuring the Companion Cube pink heart, cake warning icon (*"THE CAKE IS A LIE"*), and high-energy hazard indicators.
+    - GLaDOS neurotoxin red klaxon strobe at seconds `56–59`, launching a high-velocity **High Energy Pellet** bouncing through the portals across the clock face at `:00–:02`.
+
+13. **Monty Python / Silly Walks & Holy Grail**
+    - Ornate Terry Gilliam Victorian woodcut engraving frame with royal purple velvet damask and gilded curlicues.
+    - Centered **The Black Knight** (screen 2) in dark chainmail with red boar crest, dripping limbs, flying cartoon blood spurts, and *"TIS BUT A SCRATCH!"*.
+    - Animated **Ministry of Silly Walks** (John Cleese) in bowler hat, black coat, and briefcase, performing acrobatic leg kicks across the bottom of the screens.
+    - Screen 5 features the **Killer Rabbit of Caerbannog** with sharp fangs and glowing red eyes, guarded by the **Holy Hand Grenade of Antioch** (*"1.. 2.. 5! THREE, SIR!"*).
+    - Terry Gilliam's legendary **Giant Cupid Foot** slams down with an enormous comic *"SPLAT!"* squash-and-stretch animation at `:00–:02` accompanied by royal fanfare backlights.
 
 ---
 

@@ -74,9 +74,13 @@ void Backlights::loop() {
            IPSClock::getTimeOrDate().value == IPSClock::VICE_CITY ||
            IPSClock::getTimeOrDate().value == IPSClock::DELOREAN ||
            IPSClock::getTimeOrDate().value == IPSClock::NIXIE_STRANGER ||
-           IPSClock::getTimeOrDate().value == IPSClock::CYBERPUNK) {
+           IPSClock::getTimeOrDate().value == IPSClock::CYBERPUNK ||
+           IPSClock::getTimeOrDate().value == IPSClock::DOOM ||
+           IPSClock::getTimeOrDate().value == IPSClock::PORTAL ||
+           IPSClock::getTimeOrDate().value == IPSClock::MONTY_PYTHON) {
     extern uint8_t vaderSaberState, deathStarState, hyperspaceJumpState, viceCityState;
     extern uint8_t deloreanState, nixieStrangerState, cyberpunkState;
+    extern uint8_t doomState, portalState, montyPythonState;
     int mode = IPSClock::getTimeOrDate().value;
     uint8_t val = (uint32_t)getLEDValue().value * brightness * 95 / (255 * 100);
     unsigned long nowMs = millis();
@@ -86,7 +90,71 @@ void Backlights::loop() {
       return base + ((tri * span) >> 7);
     };
 
-    if (mode == IPSClock::DELOREAN) {
+    if (mode == IPSClock::DOOM) {
+      if (doomState == 2) {
+        // BFG 9000 Green Plasma Ball wave across tubes
+        uint8_t front = (nowMs / 55) % 6;
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          bool hit = (tube == front);
+          setPixelColor(d, 92, hit ? 20 : 250, hit ? val : (val >> 2));
+        }
+      } else if (doomState == 1) {
+        // Berserk Crimson Strobe
+        bool red = ((nowMs / 80) & 1) != 0;
+        fill(0, 255, red ? val : (val >> 2), 0, NUM_LEDS);
+      } else {
+        // E1M1 Toxic Green (85) and Rust Bronze (24)
+        uint8_t pulse = triWave(14, 110, 140);
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          uint8_t hue = (tube == 2 || tube == 3) ? 0 : 85;
+          setPixelColor(d, hue, 235, (uint16_t)val * pulse / 255);
+        }
+      }
+    } else if (mode == IPSClock::PORTAL) {
+      if (portalState == 1) {
+        // GLaDOS Red Warning Strobe
+        bool strobe = ((nowMs / 95) & 1) != 0;
+        fill(0, 250, strobe ? val : (val >> 2), 0, NUM_LEDS);
+      } else if (portalState == 2) {
+        // High Energy Pellet wave bouncing Blue ➔ Orange
+        uint8_t pos = (nowMs / 60) % 6;
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          bool hit = (tube == pos);
+          setPixelColor(d, (tube < 3) ? 148 : 24, hit ? 30 : 240, hit ? val : (val >> 1));
+        }
+      } else {
+        // Hours: Blue Portal (148), Center: Turret Red (0), Minutes: Orange Portal (24)
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          uint8_t hue = (tube < 2) ? 148 : ((tube == 2) ? 0 : 24);
+          setPixelColor(d, hue, 240, (val * 4) / 5);
+        }
+      }
+    } else if (mode == IPSClock::MONTY_PYTHON) {
+      if (montyPythonState == 2) {
+        // Giant Foot Splat! Flesh pink (240) impact then white squish
+        bool squish = ((nowMs / 100) & 1) != 0;
+        fill(squish ? 0 : 240, squish ? 0 : 180, val, 0, NUM_LEDS);
+      } else if (montyPythonState == 1) {
+        // Black Knight blood spurts!
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          bool spurt = (((nowMs / 70 + d * 5) % 9) == 0);
+          setPixelColor(d, 0, 250, spurt ? val : (val >> 3));
+        }
+      } else {
+        // Victorian Circus: Royal Red (0), Gold (35), Royal Blue (160)
+        uint8_t step = (nowMs / 600) % 3;
+        for (uint8_t d = 0; d < NUM_LEDS; ++d) {
+          uint8_t tube = (d < 6) ? d : ((d - 6) / 5);
+          uint8_t colorIdx = (tube + step) % 3;
+          uint8_t hue = (colorIdx == 0) ? 0 : ((colorIdx == 1) ? 35 : 160);
+          setPixelColor(d, hue, 235, (val * 3) >> 2);
+        }
+      }
+    } else if (mode == IPSClock::DELOREAN) {
       if (deloreanState == 1) {
         // 88 MPH 1.21 GW Temporal Lightning flashes (Electric Blue & White)
         bool flash = ((nowMs / 65) & 1) != 0;

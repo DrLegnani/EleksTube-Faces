@@ -10,4 +10,11 @@ scratch
 web/node_modules
 web/package-lock.json
 data/*.gz
+data/
+docs/
+more_faces/
+slide_shows/
+test/
+tools/
+weather_icons/
 
