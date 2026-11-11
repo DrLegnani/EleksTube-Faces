@@ -1,6 +1,7 @@
 #include "MatrixClock.h"
 #include "StarWarsHud.h"
 #include "IPSClock.h"
+#include "GhostbustersLogo.h"
 #include <math.h>
 
 // Shared with Backlights: 0 = Normal Ecto patrol, 1 = PKE Class 5 Alert (56-59s), 2 = Cross Streams & Trap (00-02s)
@@ -28,6 +29,7 @@ enum GhostPal {
     P_STREAM_CYAN,  // Proton electric lightning cyan
     P_TRAP_CONE,    // Ghost trap capture light beam
     P_PKE_AMBER,    // PKE meter LED amber
+    P_PANEL_BG,     // Deep beveled HUD backdrop
     P_COUNT
 };
 
@@ -50,16 +52,17 @@ const uint16_t GHOST_RAW[P_COUNT] = {
     swC565(255, 230, 50),   // P_STREAM_YEL
     swC565(60, 230, 255),   // P_STREAM_CYAN
     swC565(140, 240, 255),  // P_TRAP_CONE
-    swC565(255, 160, 20)    // P_PKE_AMBER
+    swC565(255, 160, 20),   // P_PKE_AMBER
+    swC565(18, 16, 26)      // P_PANEL_BG
 };
 
-// Manhattan skyline at night with 55 Central Park West (Spook Central) & Ghost Trap caution chevrons
+// Manhattan skyline at night with Spook Central & seamless Ghost Trap bottom
 __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int screen, unsigned long nowMs,
                                                         uint8_t state, uint16_t stateMs, const uint16_t *pal) {
-    // 1. Midnight Sky Gradient
+    // 1. Midnight Sky Gradient (smooth continuous gradient)
     for (int y = 0; y < 192; ++y) {
         uint8_t t = (y * 255) / 192;
-        uint16_t sky = (t < 128) ? pal[P_SKY_TOP] : pal[P_SKY_BOT];
+        uint16_t sky = (t < 120) ? pal[P_SKY_TOP] : pal[P_SKY_BOT];
         s.drawFastHLine(0, y, TFT_WIDTH, sky);
     }
 
@@ -75,7 +78,7 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
         }
     }
 
-    // 3. Manhattan Skyline Silhouette (Art Deco Spook Central on screen 2/3)
+    // 3. Manhattan Skyline Silhouette (Art Deco 55 Central Park West on screen 2)
     int bldH[6] = {55, 80, 115, 95, 75, 60};
     int baseH = bldH[screen];
     s.fillRect(6, 192 - baseH, TFT_WIDTH - 12, baseH, pal[P_BUILDING]);
@@ -85,13 +88,12 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
     if (screen == 2) {
         s.fillRect(25, 192 - baseH - 18, TFT_WIDTH - 50, 18, pal[P_BUILDING]);
         s.drawFastHLine(20, 192 - baseH, TFT_WIDTH - 40, pal[P_STREAM_CYAN]);
-        // Temple altar pillars
         for (int p = 30; p < TFT_WIDTH - 30; p += 12) {
             s.fillRect(p, 192 - baseH - 14, 4, 14, pal[P_WINDOW_LIT]);
         }
     }
 
-    // Random lit windows in buildings
+    // Lit windows in buildings
     for (int wy = 192 - baseH + 10; wy < 180; wy += 14) {
         for (int wx = 16; wx < TFT_WIDTH - 20; wx += 16) {
             uint16_t wseed = (uint16_t)(wx * 37 + wy * 19 + screen * 43);
@@ -101,15 +103,7 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
         }
     }
 
-    // 4. Ectoplasm green mist curling across bottom of skyline
-    uint8_t mistPulse = (uint8_t)(10 + ((nowMs / 80 + screen * 25) % 15));
-    for (int my = 175; my < 192; ++my) {
-        if ((my + (nowMs / 90)) % 3 == 0) {
-            s.drawFastHLine(0, my, TFT_WIDTH, pal[P_SLIMER_AURA]);
-        }
-    }
-
-    // 5. Ghost Trap caution hazard stripes across the very bottom (y: 222-238)
+    // 4. Ghost Trap caution hazard stripes across the very bottom (y: 222-238)
     s.fillRect(0, 222, TFT_WIDTH, 18, pal[P_HAZARD_BLK]);
     for (int x = -20; x < TFT_WIDTH + 20; x += 16) {
         int sx = x + (screen * 8);
@@ -125,7 +119,7 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
     }
     s.drawFastHLine(0, 221, TFT_WIDTH, pal[P_HAZARD_YEL]);
 
-    // 6. Ectoplasm Slime Drips from top bezel
+    // 5. Ectoplasm Slime Drips from top bezel
     int dripX[4] = {18, 48, 86, 116};
     int dripLen[4] = {8, 16, 11, 20};
     for (int d = 0; d < 4; ++d) {
@@ -133,201 +127,160 @@ __attribute__((noinline)) void drawGhostbustersBackdrop(TFT_eSprite &s, int scre
         int dl = dripLen[d] + ((d + screen) % 3) * 2;
         s.fillRect(dx - 3, 0, 7, dl - 4, pal[P_SLIMER_GRN]);
         s.fillCircle(dx, dl - 3, 4, pal[P_SLIMER_GRN]);
-        s.fillCircle(dx - 1, dl - 4, 1, pal[P_WHITE]); // Slime shine
+        s.fillCircle(dx - 1, dl - 4, 1, pal[P_WHITE]);
     }
     s.drawFastHLine(0, 0, TFT_WIDTH, pal[P_SLIMER_GRN]);
     s.drawFastHLine(0, 1, TFT_WIDTH, pal[P_SLIMER_GRN]);
 }
 
-// Draw the legendary "NO-GHOST" Logo (Mooglie the Ghost in red prohibition circle)
+// Draw the REAL, iconic Ghostbusters No-Ghost Logo on Screen 2
 __attribute__((noinline)) void drawNoGhostLogoCenter(TFT_eSprite &s, const struct tm &now,
                                                      suseconds_t subsecond, unsigned long nowMs,
                                                      uint8_t state, const uint16_t *pal) {
-    // Header retro badge
-    s.fillRect(8, 6, TFT_WIDTH - 16, 16, pal[P_BLACK]);
-    s.drawRect(8, 6, TFT_WIDTH - 16, 16, pal[P_LOGO_RED]);
-    s.setTextColor(pal[P_WHITE], pal[P_BLACK]);
-    s.setTextSize(1);
-    s.drawString("GHOSTBUSTERS", 20, 10);
+    int cx = TFT_WIDTH / 2; // 67
 
-    int cx = TFT_WIDTH / 2;
-    int cy = 95;
-    int r = 46;
+    // Top Header Badge (using swFillChamfer and swDrawTxt)
+    swFillChamfer(s, 12, 10, 111, 26, 4, pal[P_HAZARD_YEL]);
+    s.fillRect(14, 12, 107, 22, pal[P_PANEL_BG]);
+    swDrawTxt(s, "GHOSTBUSTERS", cx, 15, 1, 1, TC_DATUM, pal[P_LOGO_RED]);
+    swDrawTxt(s, "NEW YORK CITY", cx, 24, 1, 1, TC_DATUM, pal[P_WHITE]);
 
-    // Outer Red Prohibition Ring
-    for (int dr = 0; dr < 7; ++dr) {
-        s.drawCircle(cx, cy, r - dr, pal[P_LOGO_RED]);
-    }
-    s.drawCircle(cx, cy, r + 1, pal[P_LOGO_RED_DIM]);
+    // REAL BITMAP LOGO (112x112 from PROGMEM, transparent black key)
+    int startX = (TFT_WIDTH - GHOST_LOGO_W) / 2; // 11
+    int startY = 46;
 
-    // Mooglie the Ghost inside
-    int gx = cx;
-    int gy = cy + 2;
+    // Glowing ectoplasm aura behind the real logo
+    s.fillCircle(cx, startY + GHOST_LOGO_H / 2, 52, pal[P_SLIMER_AURA]);
 
-    // Ghost body / head
-    s.fillCircle(gx, gy - 8, 22, pal[P_WHITE]);          // Head
-    s.fillRoundRect(gx - 20, gy - 12, 40, 32, 12, pal[P_WHITE]); // Body
-    s.fillCircle(gx + 12, gy + 18, 12, pal[P_WHITE]);    // Tail curving right
-
-    // Ghost cartoon face (eyes, eyebrows, cheerful mouth)
-    // Left eye
-    s.fillCircle(gx - 7, gy - 12, 4, pal[P_BLACK]);
-    s.fillCircle(gx - 6, gy - 13, 1, pal[P_WHITE]);
-    // Right eye (winking/tilted)
-    s.fillCircle(gx + 7, gy - 12, 4, pal[P_BLACK]);
-    s.fillCircle(gx + 8, gy - 13, 1, pal[P_WHITE]);
-    // Eyebrows
-    s.drawLine(gx - 11, gy - 18, gx - 4, gy - 16, pal[P_BLACK]);
-    s.drawLine(gx + 4, gy - 16, gx + 11, gy - 18, pal[P_BLACK]);
-    // Wide happy ghost smile
-    s.fillCircle(gx, gy - 3, 6, pal[P_BLACK]);
-    s.fillCircle(gx, gy - 4, 5, pal[P_WHITE]);
-    s.fillCircle(gx, gy - 1, 3, pal[P_SLIMER_LIP]); // Tongue
-
-    // Ghost Waving Hands (breaking past the ring!)
-    // Left hand (waving out)
-    s.fillCircle(gx - 26, gy - 16, 9, pal[P_WHITE]);
-    s.fillCircle(gx - 32, gy - 20, 4, pal[P_WHITE]); // thumb
-    s.fillCircle(gx - 30, gy - 26, 4, pal[P_WHITE]); // finger 1
-    s.fillCircle(gx - 24, gy - 28, 4, pal[P_WHITE]); // finger 2
-    // Right hand
-    s.fillCircle(gx + 26, gy - 4, 9, pal[P_WHITE]);
-    s.fillCircle(gx + 32, gy - 8, 4, pal[P_WHITE]);
-
-    // Red Diagonal Slash across the ghost (\)
-    for (int t = -4; t <= 4; ++t) {
-        int x1 = cx - 33 + t;
-        int y1 = cy - 33;
-        int x2 = cx + 33 + t;
-        int y2 = cy + 33;
-        s.drawLine(x1, y1, x2, y2, pal[P_LOGO_RED]);
+    for (int y = 0; y < GHOST_LOGO_H; ++y) {
+        for (int x = 0; x < GHOST_LOGO_W; ++x) {
+            uint16_t rawColor = pgm_read_word(&GHOST_LOGO_DATA[y * GHOST_LOGO_W + x]);
+            if (rawColor != 0x0000) {
+                // Transparency key: only draw non-black pixels with proper dimming
+                s.drawPixel(startX + x, startY + y, tfts->dimColor(rawColor));
+            }
+        }
     }
 
-    // Status Banner Below Logo
-    s.fillRect(10, 160, TFT_WIDTH - 20, 22, pal[P_BLACK]);
-    s.drawRect(10, 160, TFT_WIDTH - 20, 22, pal[P_STREAM_ORG]);
-    s.setTextColor(pal[P_STREAM_YEL], pal[P_BLACK]);
-    s.setTextSize(1);
+    // Bottom Status Badge (Chamfered industrial panel)
+    swFillChamfer(s, 12, 170, 111, 46, 4, pal[P_HAZARD_YEL]);
+    s.fillRect(14, 172, 107, 42, pal[P_PANEL_BG]);
+
     if (state == 2) {
-        s.setTextColor(pal[P_WHITE], pal[P_LOGO_RED]);
-        s.drawString("STREAMS CROSSED!", 14, 167);
+        swDrawTxt(s, "STREAMS CROSSED!", cx, 175, 1, 1, TC_DATUM, pal[P_LOGO_RED]);
     } else if (state == 1) {
-        s.setTextColor(pal[P_WHITE], pal[P_LOGO_RED]);
-        s.drawString("P.K.E. CRITICAL!", 18, 167);
+        swDrawTxt(s, "P.K.E. CRITICAL!", cx, 175, 1, 1, TC_DATUM, pal[P_LOGO_RED]);
     } else {
-        s.drawString("WHO YA GONNA CALL?", 12, 167);
+        swDrawTxt(s, "WHO YA GONNA CALL?", cx, 175, 1, 1, TC_DATUM, pal[P_STREAM_ORG]);
     }
 
-    // Date display
+    // Date readout formatted with swDrawTxt
     char dateBuf[16];
-    snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d", now.tm_mon + 1, now.tm_mday);
-    s.setTextColor(pal[P_STREAM_CYAN], pal[P_BLACK]);
-    s.drawString(dateBuf, 50, 190);
+    snprintf(dateBuf, sizeof(dateBuf), "%02d.%02d", now.tm_mon + 1, now.tm_mday);
+    swDrawTxt(s, dateBuf, cx, 192, 4, 1, MC_DATUM, pal[P_STREAM_CYAN]);
 }
 
-// Draw PKE Meter + Slimer (Geleia) + Weather info on Screen 5
+// Draw PKE Meter + Slimer + Weather readout on Screen 5 (TFT 6)
 __attribute__((noinline)) void drawGhostbustersHudScreen(TFT_eSprite &s, WeatherService &weather,
                                                          const struct tm &now, unsigned long nowMs,
                                                          uint8_t state, const uint16_t *pal) {
-    // 1. Header Box: Ghostbusters NYC Headquarters
-    s.fillRect(6, 6, TFT_WIDTH - 12, 32, pal[P_BLACK]);
-    s.drawRect(6, 6, TFT_WIDTH - 12, 32, pal[P_STREAM_CYAN]);
-    s.setTextColor(pal[P_STREAM_CYAN], pal[P_BLACK]);
-    s.setTextSize(1);
-    s.drawString("P.K.E. DETECTOR", 18, 11);
-    s.setTextColor(pal[P_WHITE], pal[P_BLACK]);
-    s.drawString("NYC FIREHOUSE", 24, 23);
+    int cx = TFT_WIDTH / 2; // 67
 
-    // 2. Animated PKE Meter Sensor Wings
-    int pkeY = 70;
-    int pkeX = TFT_WIDTH / 2;
-    // Wing elevation: 0 = down, 20 = fully deployed upward
+    // 1. Top P.K.E. Detection Header
+    swFillChamfer(s, 10, 10, 115, 34, 4, pal[P_STREAM_CYAN]);
+    s.fillRect(12, 12, 111, 30, pal[P_PANEL_BG]);
+    swDrawTxt(s, "P.K.E. DETECTOR", cx, 14, 1, 1, TC_DATUM, pal[P_STREAM_CYAN]);
+    swDrawTxt(s, "FIREHOUSE HQ", cx, 25, 1, 1, TC_DATUM, pal[P_WHITE]);
+
+    // 2. Animated PKE Meter Sensor Wings & Bar Graph
+    int pkeY = 62;
     int elevation = (state == 1) ? 22 : (int)(fabsf(sinf(nowMs * 0.003f)) * 14.0f);
 
     // Central PKE handle
-    s.fillRect(pkeX - 10, pkeY, 20, 26, pal[P_BUILDING]);
-    s.drawRect(pkeX - 10, pkeY, 20, 26, pal[P_STREAM_CYAN]);
+    s.fillRect(cx - 10, pkeY, 20, 24, pal[P_BUILDING]);
+    s.drawRect(cx - 10, pkeY, 20, 24, pal[P_STREAM_CYAN]);
+
     // Center PKE screen bar graph
     uint8_t bars = (state == 1) ? 5 : ((nowMs / 180) % 6);
     for (int b = 0; b < 5; ++b) {
         uint16_t bcol = (b < bars) ? (b > 3 ? pal[P_LOGO_RED] : pal[P_PKE_AMBER]) : pal[P_BLACK];
-        s.fillRect(pkeX - 7 + b * 3, pkeY + 8, 2, 10, bcol);
+        s.fillRect(cx - 7 + b * 3, pkeY + 7, 2, 10, bcol);
     }
 
     // Left Wing
-    s.drawLine(pkeX - 10, pkeY + 6, pkeX - 35, pkeY + 6 - elevation, pal[P_WHITE]);
-    s.drawLine(pkeX - 10, pkeY + 8, pkeX - 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
-    // Left Wing LED cluster
+    s.drawLine(cx - 10, pkeY + 6, cx - 35, pkeY + 6 - elevation, pal[P_WHITE]);
+    s.drawLine(cx - 10, pkeY + 8, cx - 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
     for (int wled = 0; wled < 3; ++wled) {
-        int lx = pkeX - 18 - wled * 7;
+        int lx = cx - 18 - wled * 7;
         int ly = pkeY + 7 - (elevation * (wled + 1)) / 3;
         bool lit = (state == 1) ? (((nowMs / 70 + wled) % 2) == 0) : (((nowMs / 180 + wled) % 3) == 0);
         s.fillCircle(lx, ly, 2, lit ? pal[P_PKE_AMBER] : pal[P_LOGO_RED]);
     }
 
     // Right Wing
-    s.drawLine(pkeX + 10, pkeY + 6, pkeX + 35, pkeY + 6 - elevation, pal[P_WHITE]);
-    s.drawLine(pkeX + 10, pkeY + 8, pkeX + 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
-    // Right Wing LED cluster
+    s.drawLine(cx + 10, pkeY + 6, cx + 35, pkeY + 6 - elevation, pal[P_WHITE]);
+    s.drawLine(cx + 10, pkeY + 8, cx + 35, pkeY + 8 - elevation, pal[P_STREAM_ORG]);
     for (int wled = 0; wled < 3; ++wled) {
-        int rx = pkeX + 18 + wled * 7;
+        int rx = cx + 18 + wled * 7;
         int ry = pkeY + 7 - (elevation * (wled + 1)) / 3;
         bool lit = (state == 1) ? (((nowMs / 70 + wled) % 2) == 0) : (((nowMs / 180 + wled) % 3) == 0);
         s.fillCircle(rx, ry, 2, lit ? pal[P_PKE_AMBER] : pal[P_LOGO_RED]);
     }
 
     // 3. Floating Animated SLIMER (Geleia)
-    int slimerY = 120 + (int)(sinf(nowMs * 0.004f) * 6.0f);
-    int slimerX = TFT_WIDTH / 2;
+    int slimerY = 118 + (int)(sinf(nowMs * 0.004f) * 6.0f);
+    int slimerX = cx;
 
     // Slimer glowing green aura
     s.fillCircle(slimerX, slimerY, 22, pal[P_SLIMER_AURA]);
     // Body potato shape
     s.fillRoundRect(slimerX - 16, slimerY - 14, 32, 28, 12, pal[P_SLIMER_GRN]);
-    s.fillCircle(slimerX, slimerY - 10, 14, pal[P_SLIMER_GRN]); // top head
+    s.fillCircle(slimerX, slimerY - 10, 14, pal[P_SLIMER_GRN]);
     // Fat rolls / bottom blob
     s.fillCircle(slimerX - 6, slimerY + 12, 8, pal[P_SLIMER_GRN]);
     s.fillCircle(slimerX + 7, slimerY + 11, 7, pal[P_SLIMER_GRN]);
 
-    // Slimer cartoon eyes (derpy expression)
+    // Slimer cartoon eyes
     s.fillCircle(slimerX - 6, slimerY - 12, 4, pal[P_WHITE]);
     s.fillCircle(slimerX + 6, slimerY - 12, 4, pal[P_WHITE]);
     s.fillCircle(slimerX - 5, slimerY - 12, 2, pal[P_BLACK]);
     s.fillCircle(slimerX + 5, slimerY - 12, 2, pal[P_BLACK]);
 
-    // Huge open eating mouth
+    // Huge open mouth
     s.fillRoundRect(slimerX - 10, slimerY - 4, 20, 12, 5, pal[P_BLACK]);
-    s.fillCircle(slimerX, slimerY + 2, 4, pal[P_SLIMER_LIP]); // tongue
-    s.drawPixel(slimerX - 6, slimerY - 3, pal[P_WHITE]);     // tooth 1
-    s.drawPixel(slimerX + 6, slimerY - 3, pal[P_WHITE]);     // tooth 2
+    s.fillCircle(slimerX, slimerY + 2, 4, pal[P_SLIMER_LIP]);
+    s.drawPixel(slimerX - 6, slimerY - 3, pal[P_WHITE]);
+    s.drawPixel(slimerX + 6, slimerY - 3, pal[P_WHITE]);
 
-    // Slimer stubby arms
+    // Stubby arms
     s.fillRoundRect(slimerX - 22, slimerY - 6, 8, 6, 3, pal[P_SLIMER_GRN]);
     s.fillRoundRect(slimerX + 15, slimerY - 8, 8, 6, 3, pal[P_SLIMER_GRN]);
 
-    // 4. Live Weather & Temperature
-    s.fillRect(8, 168, TFT_WIDTH - 16, 44, pal[P_BLACK]);
-    s.drawRect(8, 168, TFT_WIDTH - 16, 44, pal[P_SLIMER_GRN]);
+    // 4. Weather & Entity Status Box (Clean chamfer panel)
+    swFillChamfer(s, 10, 162, 115, 54, 4, pal[P_SLIMER_GRN]);
+    s.fillRect(12, 164, 111, 50, pal[P_PANEL_BG]);
 
-    s.setTextColor(pal[P_SLIMER_GRN], pal[P_BLACK]);
-    s.setTextSize(1);
-    s.drawString("P.K.E. ENTITY:", 14, 172);
+    swDrawTxt(s, "PARANORMAL SCAN", cx, 167, 1, 1, TC_DATUM, pal[P_SLIMER_GRN]);
 
     if (state == 1 || state == 2) {
-        s.setTextColor(pal[P_WHITE], pal[P_LOGO_RED]);
-        s.drawString("CLASS 5 VAPOR!", 14, 185);
+        swDrawTxt(s, "CLASS 5 VAPOR!", cx, 178, 1, 1, TC_DATUM, pal[P_LOGO_RED]);
     } else {
-        s.setTextColor(pal[P_STREAM_YEL], pal[P_BLACK]);
-        s.drawString("SLIMER SPOTTED", 14, 185);
+        swDrawTxt(s, "SLIMER SPOTTED", cx, 178, 1, 1, TC_DATUM, pal[P_STREAM_YEL]);
     }
 
     // Weather readout
     char unit = (WeatherService::getUnits().value == "imperial") ? 'F' : 'C';
-    int temp = (int)(weather.getNowTemp() + (weather.getNowTemp() >= 0.0f ? 0.5f : -0.5f));
-    char wBuf[20];
-    snprintf(wBuf, sizeof(wBuf), "NYC %d*%c ENTITY OK", temp, unit);
-    s.setTextColor(pal[P_WHITE], pal[P_BLACK]);
-    s.drawString(wBuf, 14, 198);
+    float curTemp = weather.getNowTemp();
+    int temp = (int)(curTemp + (curTemp >= 0.0f ? 0.5f : -0.5f));
+    char wBuf[16];
+    snprintf(wBuf, sizeof(wBuf), "NYC %d%c", temp, unit);
+    swDrawTxt(s, wBuf, 38, 198, 2, 1, MC_DATUM, pal[P_WHITE]);
+
+    float highT = weather.getHigh(5);
+    int hi = (int)(highT + (highT >= 0.0f ? 0.5f : -0.5f));
+    char hiBuf[12];
+    snprintf(hiBuf, sizeof(hiBuf), "HI:%d", hi);
+    swDrawTxt(s, hiBuf, 94, 198, 1, 1, MC_DATUM, pal[P_STREAM_ORG]);
 }
 
 // Draw stylized high-energy Proton Wand Stream Digits
@@ -335,7 +288,6 @@ __attribute__((noinline)) void drawGhostbustersDigit(TFT_eSprite &s, int digit, 
                                                      uint8_t state, const uint16_t *pal) {
     if (digit < 0 || digit > 9) return;
 
-    // 7-segment segment mapping: a, b, c, d, e, f, g
     static const uint8_t segs[10] = {
         0x3F, // 0: a b c d e f
         0x06, // 1: b c
@@ -354,7 +306,7 @@ __attribute__((noinline)) void drawGhostbustersDigit(TFT_eSprite &s, int digit, 
     int y0 = 36;
     int w = 86;
     int h = 138;
-    int th = 14; // segment thickness
+    int th = 14;
 
     auto drawSeg = [&](int sx, int sy, int sw, int sh, bool horiz) {
         // Outer fiery proton stream aura (Red/Orange)
@@ -364,7 +316,6 @@ __attribute__((noinline)) void drawGhostbustersDigit(TFT_eSprite &s, int digit, 
         // Inner core (Intense yellow)
         if (horiz) {
             s.fillRect(sx + 3, sy + 3, sw - 6, sh - 6, pal[P_STREAM_YEL]);
-            // Lightning filament (electric white/cyan center)
             s.drawFastHLine(sx + 5, sy + sh / 2, sw - 10, pal[P_STREAM_CYAN]);
             s.drawFastHLine(sx + 6, sy + sh / 2 - 1, sw - 12, pal[P_WHITE]);
         } else {
@@ -375,19 +326,12 @@ __attribute__((noinline)) void drawGhostbustersDigit(TFT_eSprite &s, int digit, 
     };
 
     // Segments:
-    // a: top horizontal
     if (mask & 0x01) drawSeg(x0 + 4, y0, w - 8, th, true);
-    // b: top right vertical
     if (mask & 0x02) drawSeg(x0 + w - th, y0 + 4, th, (h / 2) - 4, false);
-    // c: bottom right vertical
     if (mask & 0x04) drawSeg(x0 + w - th, y0 + (h / 2), th, (h / 2) - 4, false);
-    // d: bottom horizontal
     if (mask & 0x08) drawSeg(x0 + 4, y0 + h - th, w - 8, th, true);
-    // e: bottom left vertical
     if (mask & 0x10) drawSeg(x0, y0 + (h / 2), th, (h / 2) - 4, false);
-    // f: top left vertical
     if (mask & 0x20) drawSeg(x0, y0 + 4, th, (h / 2) - 4, false);
-    // g: middle horizontal
     if (mask & 0x40) drawSeg(x0 + 4, y0 + (h / 2) - (th / 2), w - 8, th, true);
 
     // Drifting electric proton sparks around digits
@@ -403,7 +347,6 @@ __attribute__((noinline)) void drawGhostbustersDigit(TFT_eSprite &s, int digit, 
 // Crossing the Streams & Ghost Trap blast at :00 - :02s
 __attribute__((noinline)) void drawStreamCrossAnimation(TFT_eSprite &s, int screen, uint16_t stateMs,
                                                         unsigned long nowMs, const uint16_t *pal) {
-    // 1. Ghost Trap light beam shooting upward on screens 2 & 3
     if (screen == 2 || screen == 3) {
         int trapX = (screen == 2) ? TFT_WIDTH - 20 : 20;
         for (int y = 50; y < 220; ++y) {
@@ -413,22 +356,16 @@ __attribute__((noinline)) void drawStreamCrossAnimation(TFT_eSprite &s, int scre
         }
     }
 
-    // 2. Chaotic wavy Proton Stream crossing all screens
-    // Sine-wave proton stream with fluctuating frequency
     for (int x = 0; x < TFT_WIDTH; ++x) {
         int globalX = screen * TFT_WIDTH + x;
         float wave = sinf(globalX * 0.04f + nowMs * 0.02f) * 26.0f;
         int streamY = 110 + (int)wave;
 
-        // Outer red flame
         s.fillCircle(x, streamY, 6, pal[P_STREAM_RED]);
-        // Inner orange
         s.fillCircle(x, streamY, 4, pal[P_STREAM_ORG]);
-        // Lightning core
         s.drawPixel(x, streamY, pal[P_WHITE]);
         s.drawPixel(x, streamY - 1, pal[P_STREAM_CYAN]);
 
-        // Secondary counter-stream crossing
         float wave2 = cosf(globalX * 0.035f - nowMs * 0.025f) * 32.0f;
         int stream2Y = 125 + (int)wave2;
         s.fillCircle(x, stream2Y, 5, pal[P_STREAM_ORG]);
@@ -436,7 +373,6 @@ __attribute__((noinline)) void drawStreamCrossAnimation(TFT_eSprite &s, int scre
         s.drawPixel(x, stream2Y, pal[P_STREAM_CYAN]);
     }
 
-    // 3. Shockwave sparks and plasma bolts
     uint16_t sparkSeed = (uint16_t)(screen * 113 + stateMs / 30);
     for (int sp = 0; sp < 12; ++sp) {
         sparkSeed = sparkSeed * 89 + 41;
@@ -499,7 +435,6 @@ void MatrixClock::renderGhostbusters(IPSClock &clock, TimeSync &time, WeatherSer
             }
         }
 
-        // When crossing streams at :00 - :02, draw plasma streams across all screens
         if (ghostbustersState == 2) {
             drawStreamCrossAnimation(sprite, i, stateMs, nowMs, pal);
         }
